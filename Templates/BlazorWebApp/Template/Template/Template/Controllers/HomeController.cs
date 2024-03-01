@@ -10,7 +10,7 @@ namespace Template.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class HomeController : CrudController<HomeDTO, HomeEntity>
+    public class HomeController : CrudController<HomeEntity>
     {
         public HomeController(ApplicationDbContext dbContext) : base(dbContext)
         {

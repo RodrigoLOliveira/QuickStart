@@ -10,9 +10,8 @@ using Template.Infra.Data;
 
 namespace Template.Business.Services
 {
-    public abstract class CrudController<TDTOEntity,TEntity> : ControllerBase, ICrudController<TEntity> 
+    public abstract class CrudController<TEntity> : ControllerBase, ICrudController<TEntity> 
         where TEntity : EntityBase
-        where TDTOEntity : TEntity
     {
         public ApplicationDbContext DbContext { get; }
 
@@ -24,7 +23,7 @@ namespace Template.Business.Services
         public IActionResult Create(TEntity model)
         {
             DbContext.Set<TEntity>().Add(model);
-            return new OkResult();
+            return new OkObjectResult(model);
         }
 
         public IActionResult Delete(int id)

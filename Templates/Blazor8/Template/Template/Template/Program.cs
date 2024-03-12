@@ -2,6 +2,7 @@ using Inteleduc.Web.API.Filters;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Serilog;
 using Template.Components.Account;
 using Template.Domain.Authorization;
@@ -17,7 +18,7 @@ namespace Template
             var builder = WebApplication.CreateBuilder(args);
             ConfigureServices(builder.Services, builder.Configuration);
 
-            builder.Host.UseSerilog((context, configuration) => 
+            builder.Host.UseSerilog((context, configuration) =>
                 configuration.ReadFrom.Configuration(context.Configuration));
 
             var app = builder.Build();
@@ -29,9 +30,7 @@ namespace Template
         private static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         {
             // Configuração do DbContext e Connection String
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
-            services.AddDbContext<TemplateDbContext>(options => options.UseInMemoryDatabase("DdTemplate"));
-            services.AddDatabaseDeveloperPageExceptionFilter();
+            ConfigureDb(services, configuration);
 
             // Configuração de autenticação
             services.AddRazorComponents()
@@ -96,6 +95,23 @@ namespace Template
             app.UseSwaggerUI();
 
             app.UseSerilogRequestLogging();
+        }
+
+        private static void ConfigureDb(IServiceCollection services, IConfiguration configuration)
+        {
+            var debugInMemory = configuration.GetValue<bool>("DebugInMemory");
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+#if DEBUG
+            if (debugInMemory)
+                services.AddDbContext<TemplateDbContext>(options => options.UseInMemoryDatabase("DdTemplate"));
+            else
+                services.AddDbContext<TemplateDbContext>(options => options.UseSqlServer(connectionString));
+
+            services.AddDatabaseDeveloperPageExceptionFilter();
+#else
+            services.AddDbContext<TemplateDbContext>(options => options.UseSqlServer(connectionString));
+#endif
         }
     }
 }

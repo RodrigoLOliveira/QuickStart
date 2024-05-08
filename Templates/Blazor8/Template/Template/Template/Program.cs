@@ -3,11 +3,13 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using MudBlazor.Services;
 using Serilog;
 using Template.Components.Account;
 using Template.Domain.Authorization;
 using Template.Infra.Contexts;
 using Template.Server.Components;
+using Template.Server.Configurations;
 
 namespace Template
 {
@@ -38,9 +40,14 @@ namespace Template
                 .AddInteractiveWebAssemblyComponents();
 
             services.AddCascadingAuthenticationState();
+            services.AddScopedRepositories();
+            services.AddScopedServices();
+
             services.AddScoped<IdentityUserAccessor>();
             services.AddScoped<IdentityRedirectManager>();
             services.AddScoped<AuthenticationStateProvider, PersistingRevalidatingAuthenticationStateProvider>();
+
+            services.AddMudServices();
 
             services.AddAuthentication(options =>
             {
@@ -54,6 +61,7 @@ namespace Template
                 .AddEntityFrameworkStores<TemplateDbContext>()
                 .AddSignInManager()
                 .AddDefaultTokenProviders();
+
             services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
             // Configuração de Controllers e Views

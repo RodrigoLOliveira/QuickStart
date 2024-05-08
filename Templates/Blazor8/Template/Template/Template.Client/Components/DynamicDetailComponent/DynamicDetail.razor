@@ -1,0 +1,40 @@
+﻿@using MudBlazor
+@using System.ComponentModel
+@using System.Reflection
+@using Template.Client.Components.DynamicDetailComponent.Models
+@typeparam TItem
+
+<MudPaper Elevation="1" Class="pa-4">
+    <MudText Typo="Typo.h6">@Titulo</MudText>
+        <MudGrid>
+            @foreach (var property in Properties)
+        {
+            if (!Attribute.IsDefined(property, typeof(HideDetailAttribute)))
+            {
+                var displayName = property.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? property.Name;
+                <MudItem xs="Xs" Class="pb-4">
+                    <strong>@displayName:</strong> @RenderValueForProperty(property)
+                </MudItem>
+            }
+        }
+    </MudGrid>
+</MudPaper>
+
+@code {
+    [Parameter]
+    public string Titulo { get; set; } = "Detalhes";
+
+    [Parameter]
+    public TItem Data { get; set; }
+
+    [Parameter]
+    public int Xs { get; set; } = 12;
+
+    private PropertyInfo[] Properties => typeof(TItem).GetProperties();
+
+    private string RenderValueForProperty(PropertyInfo property)
+    {
+        var value = property.GetValue(Data);
+        return value?.ToString() ?? "N/A";
+    }
+}

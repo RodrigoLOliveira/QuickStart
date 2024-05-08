@@ -7,11 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Template.Server", "Template
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Template.Client", "Template\Template.Client\Template.Client.csproj", "{C89A25DE-2E1F-432A-A093-4616EBC4115E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Template.Domain", "Template.Domain\Template.Domain.csproj", "{FE4E59E4-E114-4CA7-A280-D9EBDBF47310}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Template.Domain", "Template.Domain\Template.Domain.csproj", "{FE4E59E4-E114-4CA7-A280-D9EBDBF47310}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Template.Infra", "Template.Infra\Template.Infra.csproj", "{C89F9AEC-53D3-42A7-933C-5DB1284EE0C9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Template.Infra", "Template.Infra\Template.Infra.csproj", "{C89F9AEC-53D3-42A7-933C-5DB1284EE0C9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Template.Business", "Template.Business\Template.Business.csproj", "{7880F3EA-2050-4C01-947E-64504FFAFC1F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Template.Business", "Template.Business\Template.Business.csproj", "{7880F3EA-2050-4C01-947E-64504FFAFC1F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

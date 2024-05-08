@@ -8,6 +8,18 @@ namespace Template.Infra.Contexts
     public class TemplateDbContext(DbContextOptions<TemplateDbContext> options) 
         : IdentityDbContext<ApplicationUser>(options)
     {
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(TemplateDbContext).Assembly);
+        }
+
+
+        #region DbSets
         public DbSet<Home> Homes { get; set; }
+
+
+        #endregion
+
     }
 }

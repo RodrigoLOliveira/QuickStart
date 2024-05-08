@@ -1,0 +1,26 @@
+﻿@page "/counter"
+@rendermode InteractiveAuto
+
+<PageTitle>Counter</PageTitle>
+
+<h1>Counter</h1>
+
+<Template.Client.Components.DynamicGridComponent.DynamicGrid TItem="Classe" Items="classe" />
+
+@code
+{
+    List<Classe> classe = new List<Classe>
+    {
+        new Classe {  Nome = "Nome 1", Idade = 1 },
+        new Classe {  Nome = "Nome 2", Idade = 2 },
+        new Classe {  Nome = "Nome 3", Idade = 3 },
+        new Classe {  Nome = "Nome 4", Idade = 4 },
+        new Classe {  Nome = "Nome 5", Idade = 5 },
+        new Classe {  Nome = "Nome 6", Idade = 6 },
+        new Classe {  Nome = "Nome 7", Idade = 7 },
+        new Classe {  Nome = "Nome 8", Idade = 8 },
+        new Classe {  Nome = "Nome 9", Idade = 9 },
+        new Classe {  Nome = "Nome 10", Idade = 10 }
+    };
+
+}

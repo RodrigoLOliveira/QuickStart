@@ -1,0 +1,232 @@
+﻿@typeparam TItem
+@using System.ComponentModel
+@using System.ComponentModel.DataAnnotations
+@using System.Reflection
+@using Microsoft.AspNetCore.Components.Rendering
+@using MudBlazor
+
+<CascadingValue Value=this>
+    <MudPaper Elevation="1" Class="pa-4">
+        <EditForm Model="@model" OnValidSubmit="HandleValidSubmit">
+            <MudText Typo="Typo.h6">@Titulo</MudText>
+
+                <MudGrid>
+                    @foreach (var property in Properties)
+                {
+                    if (!property.GetCustomAttributes(typeof(IgnoreInFormAttribute), false).Any())
+                    {
+                        var displayName = property.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? property.Name;
+                        <MudItem xs="@GetXsValue()" Class="pb-4">
+                            @RenderFieldForProperty(property, displayName)
+                        </MudItem>
+                    }
+                }
+            </MudGrid>
+            <MudButton ButtonType="ButtonType.Submit" Color="Color.Primary" Style="margin-top: 20px; width: 100%;">@TextoBotaoEnviar</MudButton>
+            </EditForm>
+        </MudPaper>
+    </CascadingValue>
+
+
+    @code {
+    [Parameter]
+    public string Titulo { get; set; } = "Formulário";
+
+    [Parameter]
+    public string TextoBotaoEnviar { get; set; } = "Enviar";
+
+    [Parameter]
+    public EventCallback<TItem> OnFormSubmit { get; set; }
+
+    [Parameter]
+    public DynamicFormType FormType { get; set; } = DynamicFormType.Large;
+
+    [Parameter]
+    public TItem Data
+    {
+        get => model;
+        set
+        {
+            if (value != null)
+            {
+                model = value;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private TItem model = Activator.CreateInstance<TItem>();
+
+    private PropertyInfo[] Properties => typeof(TItem).GetProperties();
+
+    private async Task HandleValidSubmit()
+    {
+        await OnFormSubmit.InvokeAsync(model);
+    }
+
+    private int GetXsValue()
+    {
+        switch (FormType)
+        {
+            case DynamicFormType.Mini:
+                return 1;
+            case DynamicFormType.Tiny:
+                return 3;
+            case DynamicFormType.Medium:
+                return 6;
+            case DynamicFormType.Large:
+                return 12;
+            default:
+                return 12;
+        }
+    }
+
+    private RenderFragment RenderFieldForProperty(PropertyInfo property, string displayName) => builder =>
+    {
+        if (property.GetCustomAttribute<DropDownOptionsAttribute>() != null)
+        {
+            RenderDropDown(builder, property, displayName);
+        }
+        else if (property.PropertyType.IsEnum)
+        {
+            RenderEnumDropDown(builder, property, displayName);
+        }
+        else if (property.PropertyType == typeof(bool))
+        {
+            RenderCheckBox(builder, property, displayName);
+        }
+        else
+        {
+            RenderTextField(builder, property, displayName);
+        }
+    };
+
+    private void RenderDropDown(RenderTreeBuilder builder, PropertyInfo property, string displayName)
+    {
+        int seq = 0;
+        var value = property.GetValue(model);
+        var dropDownOptions = property.GetCustomAttribute<DropDownOptionsAttribute>();
+        var values = GetStaticFieldValues(dropDownOptions.OptionsType);
+        builder.OpenComponent(seq++, typeof(MudSelect<string>));
+        builder.AddAttribute(seq++, "Label", displayName);
+        builder.AddAttribute(seq++, "SelectedValue", value?.ToString());
+        builder.AddAttribute(seq++, "ValueChanged", EventCallback.Factory.Create<string>(this, newValue =>
+        {
+            property.SetValue(model, newValue);
+        }));
+        builder.AddAttribute(seq++, "ChildContent", (RenderFragment)((builder2) =>
+        {
+            foreach (var val in values)
+            {
+                builder2.OpenComponent(seq++, typeof(MudSelectItem<string>));
+                builder2.AddAttribute(seq++, "Value", val.Value);
+                builder2.AddAttribute(seq++, "ChildContent", (RenderFragment)((builder3) => builder3.AddContent(0, val.Key)));
+                builder2.CloseComponent();
+            }
+        }));
+        builder.CloseComponent();
+    }
+
+    private void RenderEnumDropDown(RenderTreeBuilder builder, PropertyInfo property, string displayName)
+    {
+        int seq = 0;
+        var value = property.GetValue(model);
+        var enumType = property.PropertyType;
+        var enumValues = Enum.GetValues(enumType)
+                             .Cast<object>()
+                             .Select(e => new KeyValuePair<string, object>(Enum.GetName(enumType, e), e));
+
+        builder.OpenComponent(seq++, typeof(MudSelect<>).MakeGenericType(enumType));
+        builder.AddAttribute(seq++, "Label", displayName);
+        builder.AddAttribute(seq++, "SelectedValue", value);
+        builder.AddAttribute(seq++, "ValueChanged", CreateEventCallback(enumType, property, value));
+        builder.AddAttribute(seq++, "ChildContent", (RenderFragment)((builder2) =>
+        {
+            foreach (var enumValue in enumValues)
+            {
+                builder2.OpenComponent(seq++, typeof(MudSelectItem<>).MakeGenericType(enumType));
+                builder2.AddAttribute(seq++, "Value", enumValue.Value);
+                builder2.AddAttribute(seq++, "ChildContent", (RenderFragment)((builder3) => builder3.AddContent(0, enumValue.Key)));
+                builder2.CloseComponent();
+            }
+        }));
+        builder.CloseComponent();
+    }
+
+    private void RenderCheckBox(RenderTreeBuilder builder, PropertyInfo property, string displayName)
+    {
+        int seq = 0;
+        var value = (bool)property.GetValue(model);
+        builder.OpenComponent(seq++, typeof(MudCheckBox<bool>));
+        builder.AddAttribute(seq++, "Label", displayName);
+        builder.AddAttribute(seq++, "Checked", value);
+        builder.AddAttribute(seq++, "ValueChanged", EventCallback.Factory.Create<bool>(this, newValue => property.SetValue(model, newValue)));
+        builder.CloseComponent();
+    }
+
+    private void RenderTextField(RenderTreeBuilder builder, PropertyInfo property, string displayName)
+    {
+        int seq = 0;
+        var value = property.GetValue(model);
+        builder.OpenComponent(seq++, typeof(MudTextField<string>));
+        builder.AddAttribute(seq++, "Label", displayName);
+        builder.AddAttribute(seq++, "Value", value?.ToString());
+        builder.AddAttribute(seq++, "ValueChanged", EventCallback.Factory.Create<string>(this, newValue =>
+        {
+            var convertedValue = TypeDescriptor.GetConverter(property.PropertyType).ConvertFromString(newValue);
+            try
+            {
+                property.SetValue(model, convertedValue);
+            }
+            catch
+            {
+                // Optionally handle conversion errors here
+            }
+        }));
+        builder.CloseComponent();
+    }
+
+    private EventCallback? CreateEventCallback(Type enumType, PropertyInfo property, object? value)
+    {
+        // Identificando corretamente os parâmetros para o método Create
+        var methodInfo = typeof(EventCallbackFactory).GetMethod("Create", new[] { typeof(object), typeof(Action<>) })
+                                                     ?.MakeGenericMethod(enumType);
+
+        // Criar um delegate do tipo Action<object> para manipular a mudança de valor
+        Action<object> action = newValue => property.SetValue(model, Convert.ChangeType(newValue, enumType));
+
+        // Invocar o método com os parâmetros corretos
+        return (EventCallback?) methodInfo?.Invoke(EventCallback.Factory, new object[] { this, action });
+    }
+
+    private RenderFragment EnumDropDown(Type enumType) => builder =>
+    {
+        int seq = 0;
+        foreach (var value in Enum.GetValues(enumType))
+        {
+            builder.OpenComponent(seq++, typeof(MudSelectItem<>).MakeGenericType(enumType));
+            builder.AddAttribute(seq++, "Value", value);
+            builder.AddAttribute(seq++, "ChildContent", (RenderFragment)((builder2) =>
+            {
+                builder2.AddContent(0, value.ToString());
+            }));
+            builder.CloseComponent();
+        }
+    };
+
+    private IEnumerable<KeyValuePair<string, string>> GetStaticFieldValues(Type type)
+    {
+        return type.GetFields(BindingFlags.Static | BindingFlags.Public)
+                   .Where(field => field.IsStatic && field.FieldType == typeof(string))
+                   .Select(field => new KeyValuePair<string, string>(field.Name, (string)field.GetValue(null)));
+    }
+
+    private bool IsStructWithStaticFields(Type type)
+    {
+        if (!type.IsValueType || type.IsPrimitive || type.IsEnum)
+            return false;
+
+        // Checa se há pelo menos um campo estático não nulo
+        return type.GetFields(BindingFlags.Static | BindingFlags.Public).Any(field => field.IsStatic);
+    }
+}

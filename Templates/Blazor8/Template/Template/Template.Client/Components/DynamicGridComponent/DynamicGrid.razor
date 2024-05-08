@@ -1,0 +1,125 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using System.Reflection
+@using MudBlazor
+@using System.ComponentModel
+@using System.Linq.Expressions
+@using Template.Client.Components.DynamicGridComponent.Models
+@typeparam TItem
+
+
+<MudDataGrid T="TItem" MultiSelection="true" Items="@Items" SortMode="SortMode.Multiple" Filterable="true" QuickFilter="Search" Hideable="true">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">@Titulo</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true"
+                          AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        </ToolBarContent>
+        <Columns>
+            @foreach (var prop in typeof(TItem).GetProperties())
+        {
+            @RenderFieldForProperty(prop)
+        }
+        <TemplateColumn>
+            <CellTemplate>
+                <MudStack Row>
+                    @RenderFieldForButton(context.Item)
+                </MudStack>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <PagerContent>
+        <MudDataGridPager T="TItem" />
+    </PagerContent>
+</MudDataGrid>
+
+@code {
+    [Parameter]
+    public string Titulo { get; set; } = "Lista";
+
+    [Parameter]
+    public IEnumerable<TItem> Items { get; set; }
+
+    [Parameter]
+    public List<ButtonDataGridModel<TItem>> Buttons { get; set; } = [];
+
+    private string _searchString;
+
+    private bool Search(TItem item)
+    {
+        if (string.IsNullOrEmpty(_searchString))
+            return true;
+
+        var properties = typeof(TItem).GetProperties()
+            .Where(p => IsPrimitive(p.PropertyType) && p.GetCustomAttribute(typeof(HiddenColumnAttribute)) == null);
+
+        foreach (var prop in properties)
+        {
+            var value = prop.GetValue(item)?.ToString() ?? "";
+            if (value.IndexOf(_searchString, StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+        }
+
+        return false;
+    }
+
+
+    private bool IsPrimitive(Type type)
+    {
+        return type.IsPrimitive || type == typeof(string) || type == typeof(decimal) || type == typeof(DateTime);
+    }
+
+    private Expression<Func<TItem, object>> CreatePropertyExpression(string propertyName)
+    {
+        var parameter = Expression.Parameter(typeof(TItem), "x");
+        Expression property = Expression.Property(parameter, propertyName);
+
+        if (property.Type != typeof(object))
+        {
+            property = Expression.Convert(property, typeof(object));
+        }
+
+        return Expression.Lambda<Func<TItem, object>>(property, parameter);
+    }
+
+    private RenderFragment RenderFieldForProperty(PropertyInfo prop) => builder =>
+    {
+        if (prop.GetCustomAttribute(typeof(HiddenColumnAttribute)) != null || !IsPrimitive(prop.PropertyType))
+            return;
+
+        var parameter = Expression.Parameter(typeof(TItem), "x");
+        var property = Expression.Property(parameter, prop);
+        var lambda = Expression.Lambda<Func<TItem, object>>(Expression.Convert(property, typeof(object)), parameter);
+
+        var displayName = prop.GetCustomAttribute(typeof(DisplayNameAttribute)) as DisplayNameAttribute;
+        var title = displayName != null ? displayName.DisplayName : prop.Name;
+
+        // Render the column for the property
+        builder.OpenComponent(0, typeof(MudBlazor.PropertyColumn<TItem, object>));
+        builder.AddAttribute(1, "Property", lambda);
+        builder.AddAttribute(2, "Title", title);
+        builder.CloseComponent();
+    };
+
+    private RenderFragment RenderFieldForButton(TItem item) => builder =>
+    {
+    int seq = 0; // Sequência para atributos
+    foreach (var button in Buttons)
+    {
+        builder.OpenComponent<MudButton>(seq++);
+        builder.AddAttribute(seq++, "ChildContent", (RenderFragment)((buttonBuilder) =>
+        {
+            buttonBuilder.AddContent(0, button.Text);
+        }));
+        builder.AddAttribute(seq++, "Color", button.Color);
+
+        // Criar uma cópia do item para capturar no lambda
+        TItem currentItem = item;
+        builder.AddAttribute(seq++, "OnClick", EventCallback.Factory.Create<MouseEventArgs>(this, (MouseEventArgs args) =>
+        {
+            button.OnClick(currentItem); // Chama a função OnClick do botão com o item correto
+        }));
+
+        builder.CloseComponent();
+    }
+    };
+}

@@ -9,5 +9,7 @@ namespace Template.Domain.Entities
 {
     public class Home : EntityBase
     {
+        public string Nome { get; set; }
+        public string UF { get; set; }
     }
 }

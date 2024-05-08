@@ -16,7 +16,6 @@ namespace Template.Infra.Contexts
 
 
         #region DbSets
-        public DbSet<Home> Homes { get; set; }
 
 
         #endregion
